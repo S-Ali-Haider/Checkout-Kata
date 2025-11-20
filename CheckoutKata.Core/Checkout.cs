@@ -12,6 +12,11 @@ namespace CheckoutKata.Core
             _pricingRules = pricingRules;
         }
 
+        /// <summary>
+        /// Adds an item to _scannedItems dictionary
+        /// </summary>
+        /// <param name="item"></param>
+        /// <exception cref="ArgumentException"></exception>
         public void Scan(string item)
         {
             if (!_pricingRules.IsValidItem(item))
@@ -23,6 +28,10 @@ namespace CheckoutKata.Core
                 _scannedItems[item] = 1;
         }
 
+        /// <summary>
+        /// Returns total price of all scanned items till now.
+        /// </summary>
+        /// <returns>Total price in int</returns>
         public int GetTotalPrice()
         {
             int total = 0;
