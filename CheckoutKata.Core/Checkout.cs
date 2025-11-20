@@ -4,21 +4,35 @@ namespace CheckoutKata.Core
 {
     public class Checkout : ICheckout
     {
-        private readonly Rules _rules;
+        private readonly IPricingRules _pricingRules;
+        private readonly Dictionary<string, int> _scannedItems = new Dictionary<string, int>();
 
-        public Checkout(Rules rules)
+        public Checkout(IPricingRules pricingRules)
         {
-            _rules = rules;
+            _pricingRules = pricingRules;
         }
 
         public void Scan(string item)
         {
+            if (!_pricingRules.IsValidItem(item))
+                throw new ArgumentException($"Invalid item: {item}");
 
+            if (_scannedItems.ContainsKey(item))
+                _scannedItems[item] += 1;
+            else
+                _scannedItems[item] = 1;
         }
 
         public int GetTotalPrice()
         {
-            return 0;
+            int total = 0;
+
+            foreach (KeyValuePair<string, int> kv in _scannedItems)
+            {
+                total += kv.Value * _pricingRules.GetPrice(kv.Key);
+            }
+
+            return total;
         }
     }
 }
