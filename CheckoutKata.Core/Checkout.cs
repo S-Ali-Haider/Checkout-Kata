@@ -1,4 +1,5 @@
 ﻿using Checkout_Kata;
+using System.Data;
 
 namespace CheckoutKata.Core
 {
@@ -22,6 +23,8 @@ namespace CheckoutKata.Core
             if (!_pricingRules.IsValidItem(item))
                 throw new ArgumentException($"Invalid item: {item}");
 
+            item = item.ToUpperInvariant();
+
             if (_scannedItems.ContainsKey(item))
                 _scannedItems[item] += 1;
             else
@@ -38,21 +41,37 @@ namespace CheckoutKata.Core
 
             foreach (KeyValuePair<string, int> kv in _scannedItems)
             {
-                SpecialPrice? sp = _pricingRules.GetOffer(kv.Key);
+                string sku = kv.Key;
+                int qty = kv.Value;
 
-                int basePrice = _pricingRules.GetPrice(kv.Key);
-                int fullPriceQty = kv.Value;
-                int discountedPrice = 0;
-                
-                if (sp != null && sp.DiscountQuantity <= kv.Value)
+                int unitPrice = _pricingRules.GetPrice(sku);
+                SpecialPrice[] offers = _pricingRules.GetOffers(sku) ?? Array.Empty<SpecialPrice>();
+
+                var dp = new int[qty + 1];
+                dp[0] = 0;
+
+                for (int i = 1; i <= qty; i++)
                 {
-                    discountedPrice = (kv.Value / sp.DiscountQuantity) * sp.DiscountedPrice;
-                    fullPriceQty = kv.Value % sp.DiscountQuantity;
-                }
-                
-                int price = fullPriceQty * basePrice + discountedPrice;
+                    dp[i] = dp[i - 1] + unitPrice;
 
-                total += price;
+                    if (offers != null)
+                    {
+                        foreach (var sp in offers)
+                        {
+                            if (sp == null) 
+                            { 
+                                continue; 
+                            }
+
+                            if (i >= sp.DiscountQuantity)
+                            {
+                                dp[i] = Math.Min(dp[i], dp[i - sp.DiscountQuantity] + sp.DiscountedPrice);
+                            }
+                        }
+                    }
+                }
+
+                total += dp[qty];
             }
 
             return total;

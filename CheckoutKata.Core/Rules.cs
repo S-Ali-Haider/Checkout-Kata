@@ -14,21 +14,24 @@
         /// </summary>
         /// <param name="item"></param>
         /// <param name="unitPrice"></param>
-        /// <param name="specialPrice"></param>
-        public void AddRule(string item, int unitPrice, SpecialPrice? specialPrice)
+        /// <param name="specialPrices"></param>
+        public void AddRule(string item, int unitPrice, SpecialPrice[]? specialPrices)
         {
             if (string.IsNullOrWhiteSpace(item))
             {
                 throw new ArgumentException($"Item is null or Empty");
             }
 
-            if (specialPrice != null)
+            if (specialPrices != null)
             {
-                if (specialPrice.DiscountedPrice <= 0)
-                    throw new ArgumentException($"There must be an offer and discounted price must be > 0");
+                foreach(SpecialPrice sp in specialPrices)
+                {
+                    if (sp.DiscountedPrice <= 0)
+                        throw new ArgumentException($"There must be an offer and discounted price must be > 0");
 
-                if (specialPrice.DiscountQuantity <= 0)
-                    throw new ArgumentException($"There must be an offer and discounted quantity must be > 0");
+                    if (sp.DiscountQuantity <= 0)
+                        throw new ArgumentException($"There must be an offer and discounted quantity must be > 0");
+                }
             }
 
             if (unitPrice <= 0)
@@ -36,17 +39,17 @@
                 throw new ArgumentException($"UnitPrice must be > 0");
             }
 
-            PricingRule existingRule = _pricingRules.FirstOrDefault(x => x.Item == item);
+            PricingRule? existingRule = _pricingRules.FirstOrDefault(x => x.Item == item);
 
             if (existingRule != null)
             {
                 existingRule.UnitPrice = unitPrice; 
-                existingRule.SpecialPrice = specialPrice;
+                existingRule.SpecialPrice = specialPrices;
 
                 return;
             }
 
-            PricingRule rule = new PricingRule(item, unitPrice, specialPrice);
+            PricingRule rule = new PricingRule(item, unitPrice, specialPrices);
             _pricingRules = _pricingRules.Append(rule).ToArray();
         }
 
@@ -67,11 +70,11 @@
         }
 
         /// <summary>
-        /// Returns an offer associated with this item
+        /// Returns offers associated with this item
         /// </summary>
         /// <param name="item"></param>
-        /// <returns>SpecialPrice containing discountedQuantity and discountedPrice if offer exists, otherwise null.</returns>
-        public SpecialPrice? GetOffer(string item)
+        /// <returns>SpecialPrices each containing discountedQuantity and discountedPrice if any offer exists, otherwise null.</returns>
+        public SpecialPrice[]? GetOffers(string item)
         {
             PricingRule? rule = _pricingRules.FirstOrDefault(x => x.Item == item);
             if (rule == null)
