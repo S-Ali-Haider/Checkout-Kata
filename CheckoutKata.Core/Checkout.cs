@@ -29,7 +29,21 @@ namespace CheckoutKata.Core
 
             foreach (KeyValuePair<string, int> kv in _scannedItems)
             {
-                total += kv.Value * _pricingRules.GetPrice(kv.Key);
+                SpecialPrice? sp = _pricingRules.GetOffer(kv.Key);
+
+                int basePrice = _pricingRules.GetPrice(kv.Key);
+                int fullPriceQty = kv.Value;
+                int discountedPrice = 0;
+                
+                if (sp != null && sp.DiscountQuantity <= kv.Value)
+                {
+                    discountedPrice = (kv.Value / sp.DiscountQuantity) * sp.DiscountedPrice;
+                    fullPriceQty = kv.Value % sp.DiscountQuantity;
+                }
+                
+                int price = fullPriceQty * basePrice + discountedPrice;
+
+                total += price;
             }
 
             return total;
