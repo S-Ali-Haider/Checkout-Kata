@@ -2,11 +2,11 @@
 {
     public class Rules : IPricingRules
     {
-        private PricingRule[] _pricingRules;
+        private readonly Dictionary<string, PricingRule> _pricingRules;
 
         public Rules()
         {
-            _pricingRules = Array.Empty<PricingRule>();
+            _pricingRules = new();
         }
 
         /// <summary>
@@ -39,18 +39,9 @@
                 throw new ArgumentException($"UnitPrice must be > 0");
             }
 
-            PricingRule? existingRule = _pricingRules.FirstOrDefault(x => x.Item == item);
+            item = item.ToUpperInvariant();
 
-            if (existingRule != null)
-            {
-                existingRule.UnitPrice = unitPrice; 
-                existingRule.SpecialPrice = specialPrices;
-
-                return;
-            }
-
-            PricingRule rule = new PricingRule(item, unitPrice, specialPrices);
-            _pricingRules = _pricingRules.Append(rule).ToArray();
+            _pricingRules[item] = new PricingRule(item, unitPrice, specialPrices);
         }
 
         /// <summary>
@@ -60,8 +51,12 @@
         /// <returns>Price in int if it exists, otherwise 0</returns>
         public int GetPrice(string item)
         {
-            PricingRule? rule = _pricingRules.FirstOrDefault(x => x.Item == item);
-            if (rule == null)
+            if (string.IsNullOrWhiteSpace(item)) 
+            {
+                throw new ArgumentException($"Item is not given.");
+            }
+
+            if (!_pricingRules.TryGetValue(item.ToUpperInvariant(), out var rule))
             {
                 throw new ArgumentException($"There is no pricing rule for this item: {item}");
             }
@@ -76,17 +71,14 @@
         /// <returns>SpecialPrices each containing discountedQuantity and discountedPrice if any offer exists, otherwise null.</returns>
         public SpecialPrice[]? GetOffers(string item)
         {
-            PricingRule? rule = _pricingRules.FirstOrDefault(x => x.Item == item);
-            if (rule == null)
+            if (string.IsNullOrWhiteSpace(item))
             {
-                Console.WriteLine($"There is no pricing rule for this item: {item}");
-                return null;
+                throw new ArgumentException($"Item is not given.");
             }
 
-            if (rule.SpecialPrice == null)
+            if (!_pricingRules.TryGetValue(item.ToUpperInvariant(), out var rule))
             {
-                Console.WriteLine($"There is no offer for this item: {item}");
-                return null;
+                throw new ArgumentException($"There is no offer for this item: {item}");
             }
 
             return rule.SpecialPrice;
@@ -100,12 +92,12 @@
         /// <returns>True if item exists otherwise false.</returns>
         public bool IsValidItem(string item)
         {
-            if (_pricingRules.FirstOrDefault(x => x.Item == item) == null)
-            {
-                return false;
+            if (string.IsNullOrWhiteSpace(item))
+            { 
+                return false; 
             }
 
-            return true;
+            return _pricingRules.ContainsKey(item.ToUpperInvariant());
         }
     }
 }

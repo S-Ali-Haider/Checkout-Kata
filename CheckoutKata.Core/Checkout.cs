@@ -1,5 +1,4 @@
 ﻿using Checkout_Kata;
-using System.Data;
 
 namespace CheckoutKata.Core
 {

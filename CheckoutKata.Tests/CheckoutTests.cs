@@ -1,6 +1,4 @@
 ﻿using CheckoutKata.Core;
-using System.Data;
-using Xunit.Abstractions;
 
 namespace CheckoutKata.Tests
 {
@@ -145,10 +143,9 @@ namespace CheckoutKata.Tests
         }
 
         [Fact]
-        public void GetOffer_UnknownSku_ReturnsNull()
+        public void GetOffer_UnknownSku()
         {
-            var offer = _rules.GetOffers("NEW");
-            Assert.Null(offer);
+            Assert.Throws<ArgumentException>(() => _rules.GetOffers("UNKNOWN_SKU"));
         }
 
         [Fact]

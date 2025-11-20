@@ -2,9 +2,9 @@
 {
     public class PricingRule
     {
-        public string Item;
-        public int UnitPrice;
-        public SpecialPrice[]? SpecialPrice;
+        public string Item { get; }
+        public int UnitPrice { get; set; }
+        public SpecialPrice[]? SpecialPrice { get; set; }
 
         public PricingRule(string item, int unitPrice, SpecialPrice[]? specialPrice)
         {
