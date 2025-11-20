@@ -1,6 +1,4 @@
 ﻿using CheckoutKata.Core;
-using System.Data;
-using Xunit.Abstractions;
 
 namespace CheckoutKata.Tests
 {
@@ -11,8 +9,8 @@ namespace CheckoutKata.Tests
         public CheckoutTests()
         {
             _rules = new Rules();
-            _rules.AddRule("A", 50, new SpecialPrice(3, 130));
-            _rules.AddRule("B", 30, new SpecialPrice(2, 45));
+            _rules.AddRule("A", 50, new SpecialPrice[] { new SpecialPrice(3, 130) });
+            _rules.AddRule("B", 30, new SpecialPrice[] { new SpecialPrice(2, 45) });
             _rules.AddRule("C", 20, null);
             _rules.AddRule("D", 15, null);
         }
@@ -128,14 +126,14 @@ namespace CheckoutKata.Tests
         public void AddRule_ZeroOrNegativeDiscountQuantity()
         {
             // Zero discount quantity should be invalid
-            Assert.Throws<ArgumentException>(() => _rules.AddRule("Y", 10, new SpecialPrice(0, 20)));
-            Assert.Throws<ArgumentException>(() => _rules.AddRule("Y", 10, new SpecialPrice(-3, 20)));
+            Assert.Throws<ArgumentException>(() => _rules.AddRule("Y", 10, new SpecialPrice[] { new SpecialPrice(0, 20) }));
+            Assert.Throws<ArgumentException>(() => _rules.AddRule("Y", 10, new SpecialPrice[] { new SpecialPrice(-3, 20) }));
         }
 
         [Fact]
         public void AddRule_NegativeDiscountedPrice()
         {
-            Assert.Throws<ArgumentException>(() => _rules.AddRule("Z", 10, new SpecialPrice(3, -100)));
+            Assert.Throws<ArgumentException>(() => _rules.AddRule("Z", 10, new SpecialPrice[] { new SpecialPrice(3, -100) }));
         }
 
         [Fact]
@@ -145,16 +143,15 @@ namespace CheckoutKata.Tests
         }
 
         [Fact]
-        public void GetOffer_UnknownSku_ReturnsNull()
+        public void GetOffer_UnknownSku()
         {
-            var offer = _rules.GetOffer("NEW");
-            Assert.Null(offer);
+            Assert.Throws<ArgumentException>(() => _rules.GetOffers("UNKNOWN_SKU"));
         }
 
         [Fact]
         public void GetOffer_NoOffer()
         {
-            var offer = _rules.GetOffer("C");
+            var offer = _rules.GetOffers("C");
             Assert.Null(offer);
         }
 
@@ -200,6 +197,63 @@ namespace CheckoutKata.Tests
             // Add again with different price, should update 
             _rules.AddRule("X", 20, null);
             Assert.Equal(20, _rules.GetPrice("X"));
+        }
+
+        [Fact]
+        public void MultipleOffers_DP()
+        {
+            var rules = new Rules();
+
+            rules.AddRule("A", 50, new SpecialPrice[] {
+                new SpecialPrice(3, 130),
+                new SpecialPrice(5, 200)
+            });
+
+            rules.AddRule("B", 30, new SpecialPrice[] {
+                new SpecialPrice(2, 45),
+                new SpecialPrice(4, 80)
+            });
+
+            rules.AddRule("C", 20, null);
+
+            rules.AddRule("D", 15, null);
+
+            {
+                var checkout = new Checkout(rules);
+                for (int i = 0; i < 5; i++) checkout.Scan("A");
+                Assert.Equal(200, checkout.GetTotalPrice());
+            }
+
+            {
+                var checkout = new Checkout(rules);
+                for (int i = 0; i < 8; i++) checkout.Scan("A");
+                Assert.Equal(330, checkout.GetTotalPrice());
+            }
+
+            {
+                var checkout = new Checkout(rules);
+                for (int i = 0; i < 9; i++) checkout.Scan("A");
+                Assert.Equal(380, checkout.GetTotalPrice());
+            }
+
+            {
+                var checkout = new Checkout(rules);
+                for (int i = 0; i < 4; i++) checkout.Scan("B");
+                Assert.Equal(80, checkout.GetTotalPrice());
+            }
+
+            {
+                var checkout = new Checkout(rules);
+                for (int i = 0; i < 6; i++) checkout.Scan("B");
+                Assert.Equal(125, checkout.GetTotalPrice());
+            }
+
+            {
+                var checkout = new Checkout(rules);
+                for (int i = 0; i < 5; i++) checkout.Scan("A");
+                for (int i = 0; i < 4; i++) checkout.Scan("B");
+                Assert.Equal(280, checkout.GetTotalPrice());
+            }
         }
     }
 }

@@ -2,8 +2,8 @@
 {
     public class SpecialPrice
     {
-        public int DiscountQuantity;
-        public int DiscountedPrice;
+        public int DiscountQuantity { get; }
+        public int DiscountedPrice { get; }
 
         public SpecialPrice(int discountQuantity, int discountedPrice)
         {
