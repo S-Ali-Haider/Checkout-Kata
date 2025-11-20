@@ -12,6 +12,11 @@ namespace CheckoutKata.Core
             _pricingRules = pricingRules;
         }
 
+        /// <summary>
+        /// Adds an item to _scannedItems dictionary
+        /// </summary>
+        /// <param name="item"></param>
+        /// <exception cref="ArgumentException"></exception>
         public void Scan(string item)
         {
             if (!_pricingRules.IsValidItem(item))
@@ -23,13 +28,31 @@ namespace CheckoutKata.Core
                 _scannedItems[item] = 1;
         }
 
+        /// <summary>
+        /// Returns total price of all scanned items till now.
+        /// </summary>
+        /// <returns>Total price in int</returns>
         public int GetTotalPrice()
         {
             int total = 0;
 
             foreach (KeyValuePair<string, int> kv in _scannedItems)
             {
-                total += kv.Value * _pricingRules.GetPrice(kv.Key);
+                SpecialPrice? sp = _pricingRules.GetOffer(kv.Key);
+
+                int basePrice = _pricingRules.GetPrice(kv.Key);
+                int fullPriceQty = kv.Value;
+                int discountedPrice = 0;
+                
+                if (sp != null && sp.DiscountQuantity <= kv.Value)
+                {
+                    discountedPrice = (kv.Value / sp.DiscountQuantity) * sp.DiscountedPrice;
+                    fullPriceQty = kv.Value % sp.DiscountQuantity;
+                }
+                
+                int price = fullPriceQty * basePrice + discountedPrice;
+
+                total += price;
             }
 
             return total;
