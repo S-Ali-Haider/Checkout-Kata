@@ -18,7 +18,7 @@ namespace CheckoutKata.Core
 
         public int GetTotalPrice()
         {
-            return -1;
+            return 0;
         }
     }
 }
