@@ -1,4 +1,4 @@
-﻿namespace Checkout_Kata
+﻿namespace CheckoutKata.Core
 {
     public interface ICheckout
     {

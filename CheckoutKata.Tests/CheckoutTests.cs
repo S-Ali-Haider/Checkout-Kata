@@ -4,18 +4,23 @@ namespace CheckoutKata.Tests
 {
     public class CheckoutTests
     {
-        private Rules _rules;
+        private readonly IPricingRepository _repo;
+        private readonly IPricingService _service;
 
         public CheckoutTests()
         {
-            _rules = new Rules();
-            _rules.AddRule("A", 50, new SpecialPrice[] { new SpecialPrice(3, 130) });
-            _rules.AddRule("B", 30, new SpecialPrice[] { new SpecialPrice(2, 45) });
-            _rules.AddRule("C", 20, null);
-            _rules.AddRule("D", 15, null);
+            _repo = new InMemoryPricingRepository();
+
+            _repo.AddRule(new PricingRule("A", 50, new[] { new Offer(3, 130) }));
+            _repo.AddRule(new PricingRule("B", 30, new[] { new Offer(2, 45) }));
+            _repo.AddRule(new PricingRule("C", 20));
+            _repo.AddRule(new PricingRule("D", 15));
+
+            var resolver = new DefaultPricingCalculatorResolver();
+            _service = new PricingService(_repo, resolver);
         }
 
-        // helper method for scanning items given as a string
+        // Helper method for scanning items given as a string
         private static void ScanString(Checkout checkout, string items)
         {
             if (items == null) 
@@ -28,7 +33,7 @@ namespace CheckoutKata.Tests
         [Fact]
         public void EmptyBasket_TotalIsZero()
         {
-            var checkout = new Checkout(_rules);
+            var checkout = new Checkout(_service);
 
             Assert.Equal(0, checkout.GetTotalPrice());
         }
@@ -39,7 +44,7 @@ namespace CheckoutKata.Tests
         [InlineData("CDBA", 115)]
         public void BasicTotals_ReturnExpected(string items, int expected)
         {
-            var checkout = new Checkout(_rules);
+            var checkout = new Checkout(_service);
 
             ScanString(checkout, items);
 
@@ -49,7 +54,7 @@ namespace CheckoutKata.Tests
         [Fact]
         public void ThreeA_For130()
         {
-            var checkout = new Checkout(_rules); 
+            var checkout = new Checkout(_service); 
 
             checkout.Scan("A"); 
             checkout.Scan("A"); 
@@ -61,7 +66,7 @@ namespace CheckoutKata.Tests
         [Fact]
         public void AAABBB_Mixed()
         {
-            var checkout = new Checkout(_rules);
+            var checkout = new Checkout(_service);
 
             ScanString(checkout, "AAABBB");
 
@@ -84,7 +89,7 @@ namespace CheckoutKata.Tests
         [InlineData("DABABA", 190)]
         public void OfferRules(string items, int expected)
         {
-            var checkout = new Checkout(_rules);
+            var checkout = new Checkout(_service);
 
             ScanString(checkout, items);
 
@@ -95,7 +100,7 @@ namespace CheckoutKata.Tests
         [Fact]
         public void Scan_EmptyString()
         {
-            var checkout = new Checkout(_rules);
+            var checkout = new Checkout(_service);
 
             Assert.Throws<ArgumentException>(() => checkout.Scan(string.Empty));
         }
@@ -103,62 +108,62 @@ namespace CheckoutKata.Tests
         [Fact]
         public void Scan_MultiCharacterSku()
         {
-            var checkout = new Checkout(_rules);
+            var checkout = new Checkout(_service);
 
-            // Can only scan one at a time so this should be invalid.
+            // Can only scan one at a time so this should be invalid
             Assert.Throws<ArgumentException>(() => checkout.Scan("AB"));
         }
 
         [Fact]
         public void AddRule_Empty()
         {
-            Assert.Throws<ArgumentException>(() => _rules.AddRule("", 10, null));
-            Assert.Throws<ArgumentException>(() => _rules.AddRule("   ", 10, null));
+            Assert.Throws<ArgumentException>(() => _repo.AddRule(new PricingRule("", 10, null)));
+            Assert.Throws<ArgumentException>(() => _repo.AddRule(new PricingRule("   ", 10, null)));
         }
 
         [Fact]
         public void AddRule_NegativePrice()
         {
-            Assert.Throws<ArgumentException>(() => _rules.AddRule("X", -5, null));
+            Assert.Throws<ArgumentException>(() => _repo.AddRule(new PricingRule("X", -5, null)));
         }
 
         [Fact]
         public void AddRule_ZeroOrNegativeDiscountQuantity()
         {
             // Zero discount quantity should be invalid
-            Assert.Throws<ArgumentException>(() => _rules.AddRule("Y", 10, new SpecialPrice[] { new SpecialPrice(0, 20) }));
-            Assert.Throws<ArgumentException>(() => _rules.AddRule("Y", 10, new SpecialPrice[] { new SpecialPrice(-3, 20) }));
+            Assert.Throws<ArgumentException>(() => _repo.AddRule(new PricingRule("Y", 10, new Offer[] { new Offer(0, 20) })));
+            Assert.Throws<ArgumentException>(() => _repo.AddRule(new PricingRule("Y", 10, new Offer[] { new Offer(-3, 20) })));
         }
 
         [Fact]
         public void AddRule_NegativeDiscountedPrice()
         {
-            Assert.Throws<ArgumentException>(() => _rules.AddRule("Z", 10, new SpecialPrice[] { new SpecialPrice(3, -100) }));
+            Assert.Throws<ArgumentException>(() => _repo.AddRule(new PricingRule("Z", 10, new Offer[] { new Offer(3, -100) })));
         }
 
         [Fact]
         public void GetPrice_UnknownSku()
         {
-            Assert.Throws<ArgumentException>(() => _rules.GetPrice("UNKNOWN_SKU"));
+            Assert.Throws<ArgumentException>(() => _repo.GetRule("UNKNOWN_SKU").UnitPrice);
         }
 
         [Fact]
         public void GetOffer_UnknownSku()
         {
-            Assert.Throws<ArgumentException>(() => _rules.GetOffers("UNKNOWN_SKU"));
+            Assert.Throws<ArgumentException>(() => _repo.GetRule("UNKNOWN_SKU").Offers);
         }
 
         [Fact]
         public void GetOffer_NoOffer()
         {
-            var offer = _rules.GetOffers("C");
-            Assert.Null(offer);
+            var offer = _repo.GetRule("C").Offers;
+            Assert.Equal(offer, Enumerable.Empty<Offer>().ToArray());
         }
 
         [Fact]
         public void GetTotalPrice_IsIdempotent()
         {
-            var checkout = new Checkout(_rules);
+            var checkout = new Checkout(_service);
             ScanString(checkout, "AAB");
 
             var first = checkout.GetTotalPrice();
@@ -167,7 +172,7 @@ namespace CheckoutKata.Tests
 
             checkout.Scan("A");
 
-            var expectedCheckout = new Checkout(_rules);
+            var expectedCheckout = new Checkout(_service);
 
             ScanString(expectedCheckout, "AAAB"); 
             Assert.Equal(expectedCheckout.GetTotalPrice(), checkout.GetTotalPrice());
@@ -176,7 +181,7 @@ namespace CheckoutKata.Tests
         [Fact]
         public void LargeQuantity_OverflowTest()
         {
-            var checkout = new Checkout(_rules);
+            var checkout = new Checkout(_service);
 
             for (int i = 0; i < 1000; i++) 
             { 
@@ -191,65 +196,71 @@ namespace CheckoutKata.Tests
         public void AddRule_ReplacesExistingRule()
         {
             // Add rule for X as 10
-            _rules.AddRule("X", 10, null);
-            Assert.Equal(10, _rules.GetPrice("X"));
+            _repo.AddRule(new PricingRule("X", 10, null));
+            Assert.Equal(10, _repo.GetRule("X").UnitPrice);
 
             // Add again with different price, should update 
-            _rules.AddRule("X", 20, null);
-            Assert.Equal(20, _rules.GetPrice("X"));
+            _repo.AddRule(new PricingRule("X", 20, null));
+            Assert.Equal(20, _repo.GetRule("X").UnitPrice);
         }
 
         [Fact]
         public void MultipleOffers_DP()
         {
-            var rules = new Rules();
+            InMemoryPricingRepository _newRepo;
+            _newRepo = new InMemoryPricingRepository();
 
-            rules.AddRule("A", 50, new SpecialPrice[] {
-                new SpecialPrice(3, 130),
-                new SpecialPrice(5, 200)
-            });
+            var resolver = new DefaultPricingCalculatorResolver();
 
-            rules.AddRule("B", 30, new SpecialPrice[] {
-                new SpecialPrice(2, 45),
-                new SpecialPrice(4, 80)
-            });
+            PricingService _newService;
+            _newService = new PricingService(_newRepo, resolver);
 
-            rules.AddRule("C", 20, null);
+            _newRepo.AddRule(new PricingRule("A", 50, new Offer[] {
+                new Offer(3, 130),
+                new Offer(5, 200)
+            }));
 
-            rules.AddRule("D", 15, null);
+            _newRepo.AddRule(new PricingRule("B", 30, new Offer[] {
+                new Offer(2, 45),
+                new Offer(4, 80)
+            }));
+
+            _newRepo.AddRule(new PricingRule("C", 20, null));
+
+            _newRepo.AddRule(new PricingRule("D", 15, null));
 
             {
-                var checkout = new Checkout(rules);
+                var checkout = new Checkout(_newService);
                 for (int i = 0; i < 5; i++) checkout.Scan("A");
                 Assert.Equal(200, checkout.GetTotalPrice());
             }
 
             {
-                var checkout = new Checkout(rules);
+                var checkout = new Checkout(_newService);
                 for (int i = 0; i < 8; i++) checkout.Scan("A");
                 Assert.Equal(330, checkout.GetTotalPrice());
             }
 
             {
-                var checkout = new Checkout(rules);
+                var checkout = new Checkout(_newService);
                 for (int i = 0; i < 9; i++) checkout.Scan("A");
                 Assert.Equal(380, checkout.GetTotalPrice());
             }
 
             {
-                var checkout = new Checkout(rules);
+                var checkout = new Checkout(_newService);
                 for (int i = 0; i < 4; i++) checkout.Scan("B");
                 Assert.Equal(80, checkout.GetTotalPrice());
             }
 
             {
-                var checkout = new Checkout(rules);
+                var checkout = new Checkout(_newService);
                 for (int i = 0; i < 6; i++) checkout.Scan("B");
                 Assert.Equal(125, checkout.GetTotalPrice());
             }
 
             {
-                var checkout = new Checkout(rules);
+                var checkout = new Checkout(_newService);
                 for (int i = 0; i < 5; i++) checkout.Scan("A");
                 for (int i = 0; i < 4; i++) checkout.Scan("B");
                 Assert.Equal(280, checkout.GetTotalPrice());
