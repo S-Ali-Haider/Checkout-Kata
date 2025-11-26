@@ -1,4 +1,4 @@
-﻿namespace CheckoutKata.Core
+﻿namespace CheckoutKata.Core.Domain
 {
     public class PricingRule
     {

@@ -1,4 +1,6 @@
-﻿namespace CheckoutKata.Core
+﻿using CheckoutKata.Core.Domain;
+
+namespace CheckoutKata.Core.Interfaces
 {
     public interface IPricingRepository
     {

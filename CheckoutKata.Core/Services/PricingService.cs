@@ -1,4 +1,7 @@
-﻿namespace CheckoutKata.Core
+﻿using CheckoutKata.Core.Interfaces;
+using CheckoutKata.Core.Logic.Resolvers;
+
+namespace CheckoutKata.Core.Services
 {
     public class PricingService : IPricingService
     {

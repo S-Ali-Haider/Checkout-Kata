@@ -1,4 +1,6 @@
-﻿namespace CheckoutKata.Core
+﻿using CheckoutKata.Core.Interfaces;
+
+namespace CheckoutKata.Core.Services
 {
     public class Checkout : ICheckout
     {

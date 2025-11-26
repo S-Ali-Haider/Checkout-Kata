@@ -1,6 +1,8 @@
-﻿using System.Collections.Concurrent;
+﻿using CheckoutKata.Core.Domain;
+using CheckoutKata.Core.Interfaces;
+using System.Collections.Concurrent;
 
-namespace CheckoutKata.Core
+namespace CheckoutKata.Core.Data
 {
     public class InMemoryPricingRepository : IPricingRepository
     {

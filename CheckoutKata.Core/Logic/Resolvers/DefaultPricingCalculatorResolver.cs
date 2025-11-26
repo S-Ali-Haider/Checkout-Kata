@@ -1,4 +1,8 @@
-﻿namespace CheckoutKata.Core
+﻿using CheckoutKata.Core.Domain;
+using CheckoutKata.Core.Interfaces;
+using CheckoutKata.Core.Logic.Calculators;
+
+namespace CheckoutKata.Core.Logic.Resolvers
 {
     public class DefaultPricingCalculatorResolver : IPricingCalculatorResolver
     {

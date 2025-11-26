@@ -1,4 +1,8 @@
-﻿using CheckoutKata.Core;
+﻿using CheckoutKata.Core.Data;
+using CheckoutKata.Core.Domain;
+using CheckoutKata.Core.Interfaces;
+using CheckoutKata.Core.Logic.Resolvers;
+using CheckoutKata.Core.Services;
 
 namespace CheckoutKata.Tests
 {
