@@ -38,8 +38,7 @@ namespace CheckoutKata.Core.Services
 
         public int GetTotalPrice()
         {
-            // Passing a copy to preserve encapsulation
-            return _pricingService.CalculateTotal(new Dictionary<string, int>(_scanned, StringComparer.OrdinalIgnoreCase));
+            return _pricingService.CalculateTotal(_scanned);
         }
     }
 }
